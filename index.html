@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Alko Store Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+
+        h1 {
+            font-size: 2em;
+        }
+
+        .status {
+            font-size: 1.5em;
+        }
+
+        .open {
+            color: green;
+        }
+
+        .closed {
+            color: red;
+        }
+
+        .countdown {
+            font-size: 1.2em;
+            color: gray;
+        }
+    </style>
+</head>
+<body>
+	<img src="C:\Users\Tuomas\Downloads\Alko_logo.png" width="128" height="128">
+    <h1 id="status" class="status"></h1>
+    <div id="countdown" class="countdown"></div>
+
+    <script>
+        // Get current Helsinki time considering daylight saving
+        function getHelsinkiTime() {
+            const now = new Date();
+            return new Date(now.toLocaleString("en-US", { timeZone: "Europe/Helsinki" }));
+        }
+
+        // Special holiday hours in yyyy-mm-dd format
+        const specialHours = {
+            '2024-06-20': { open: 9, close: 21 }, // Juhannus Thursday
+            '2024-06-21': { open: 9, close: 12 }, // Juhannusaatto (Friday)
+            '2024-06-22': { closed: true }, // Juhannuspäivä (Saturday)
+            '2024-11-01': { open: 9, close: 21 }, // Pyhäinpäivä Eve (Friday)
+            '2024-11-02': { closed: true }, // Pyhäinpäivä (Saturday)
+            '2024-12-05': { open: 9, close: 21 }, // Independence Day Eve (Thursday)
+            '2024-12-06': { closed: true }, // Independence Day (Friday)
+            '2024-12-24': { open: 9, close: 12 }, // Christmas Eve
+            '2024-12-25': { closed: true }, // Christmas Day
+            '2024-12-26': { closed: true }, // Tapaninpäivä (Boxing Day)
+            '2024-12-31': { open: 9, close: 18 }, // New Year's Eve
+            '2025-01-01': { closed: true }, // New Year's Day
+            '2025-01-06': { closed: true } // Epiphany
+        };
+
+        // Regular opening hours
+        const regularHours = {
+            1: { open: 9, close: 21 }, // Monday
+            2: { open: 9, close: 21 }, // Tuesday
+            3: { open: 9, close: 21 }, // Wednesday
+            4: { open: 9, close: 21 }, // Thursday
+            5: { open: 9, close: 21 }, // Friday
+            6: { open: 9, close: 18 }, // Saturday
+            0: { closed: true } // Sunday
+        };
+
+        // Format date as yyyy-mm-dd string
+        function formatDate(currentTime) {
+            const year = currentTime.getFullYear();
+            const month = String(currentTime.getMonth() + 1).padStart(2, '0'); // Add leading zero
+            const day = String(currentTime.getDate()).padStart(2, '0'); // Add leading zero
+            return `${year}-${month}-${day}`;
+        }
+
+        // Check if today is a special holiday
+        function getTodayHours(currentTime) {
+            const today = formatDate(currentTime);
+            return specialHours[today] || regularHours[currentTime.getDay()];
+        }
+
+        // Check if Alko is currently open
+        function isAlkoOpen(currentTime, hours) {
+            if (hours.closed) return false;
+            const currentHour = currentTime.getHours();
+            return currentHour >= hours.open && currentHour < hours.close;
+        }
+
+        // Calculate next opening time
+        function getNextOpeningTime(currentTime) {
+            let nextTime = new Date(currentTime);
+            while (true) {
+                nextTime.setDate(nextTime.getDate() + 1); // Increment day
+                const hours = getTodayHours(nextTime);
+                if (!hours.closed) {
+                    nextTime.setHours(hours.open, 0, 0, 0);
+                    return nextTime;
+                }
+            }
+        }
+
+        // Calculate time difference until opening
+        function calculateTimeUntilOpen(currentTime, nextOpeningTime) {
+            const timeDiffInSeconds = Math.floor((nextOpeningTime - currentTime) / 1000);
+            const hours = Math.floor(timeDiffInSeconds / 3600);
+            const minutes = Math.floor((timeDiffInSeconds % 3600) / 60);
+            const seconds = timeDiffInSeconds % 60;
+            return { hours, minutes, seconds };
+        }
+
+        // Update the page with current status and countdown
+        function updateStatus() {
+            const currentTime = getHelsinkiTime();
+            const hours = getTodayHours(currentTime);
+            const statusElement = document.getElementById('status');
+            const countdownElement = document.getElementById('countdown');
+
+            if (isAlkoOpen(currentTime, hours)) {
+                statusElement.textContent = "Alko on auki!";
+                statusElement.className = 'status open';
+                countdownElement.textContent = ''; // Clear countdown if open
+            } else {
+                statusElement.textContent = "Alko on kiinni!";
+                statusElement.className = 'status closed';
+
+                const nextOpeningTime = getNextOpeningTime(currentTime);
+                const { hours: h, minutes, seconds } = calculateTimeUntilOpen(currentTime, nextOpeningTime);
+
+                countdownElement.textContent = `Alko avautuu: ${h} tunnin, ${minutes} minuutin, ja ${seconds} sekunnin päästä.`;
+                setTimeout(updateStatus, 1000); // Refresh countdown every second
+            }
+        }
+
+        // Initial status update
+        updateStatus();
+    </script>
+</body>
+</html>
