@@ -33,7 +33,7 @@
     </style>
 </head>
 <body>
-	<img src="C:\Users\Tuomas\Downloads\Alko_logo.png" width="128" height="128">
+	<img src="./Alko_logo.png" width="128" height="128">
     <h1 id="status" class="status"></h1>
     <div id="countdown" class="countdown"></div>
 
@@ -125,7 +125,7 @@
             if (isAlkoOpen(currentTime, hours)) {
                 statusElement.textContent = "Alko on auki!";
                 statusElement.className = 'status open';
-                countdownElement.textContent = ''; // Clear countdown if open
+                countdownElement.textContent = '';
             } else {
                 statusElement.textContent = "Alko on kiinni!";
                 statusElement.className = 'status closed';
