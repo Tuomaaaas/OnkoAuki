@@ -65,6 +65,9 @@
         0: { closed: true }
     };
 
+    let updateInterval = 60000; // 1 minute
+    let updateIntervalID;
+
     function formatDate(currentTime) {
         const year = currentTime.getFullYear();
         const month = String(currentTime.getMonth() + 1).padStart(2, '0');
@@ -83,7 +86,6 @@
         return currentHour >= hours.open && currentHour < hours.close;
     }
 
-    // Calculate next opening time
     function getNextOpeningTime(currentTime) {
         let nextTime = new Date(currentTime);
         while (true) {
@@ -114,9 +116,13 @@
         }
     }
 
-    function handleAlkoOpenStatus(currentTime, hours) {
+    function checkAlkoStatus() {
+        const currentTime = getHelsinkiTime();
+        const hours = getTodayHours(currentTime);
         const statusElement = document.getElementById('status');
         const countdownElement = document.getElementById('countdown');
+
+        let countdownVisible = false;
 
         if (isAlkoOpen(currentTime, hours)) {
             statusElement.textContent = "Alko on auki!";
@@ -127,37 +133,36 @@
             const timeUntilClose = calculateTimeUntil(currentTime, closingTime);
 
             if (timeUntilClose.hours < 1) {
-                countdownElement.textContent = `Alko sulkeutuu: ${displayCountdown(timeUntilClose)}`;
-                setTimeout(updateStatus, 1000);
+                countdownVisible = true;
+                countdownElement.textContent = `Alko sulkeutuu: ${timeUntilClose.minutes} minuutin ja ${timeUntilClose.seconds} sekunnin päästä.`;
             } else {
                 countdownElement.textContent = '';
             }
         } else {
-            handleAlkoClosedStatus(currentTime);
+            statusElement.textContent = "Alko on kiinni!";
+            statusElement.className = 'status closed';
+
+            const nextOpeningTime = getNextOpeningTime(currentTime);
+            const timeUntilOpen = calculateTimeUntil(currentTime, nextOpeningTime);
+
+            if (timeUntilOpen.hours < 1) {
+                countdownVisible = true;
+            }
+            countdownElement.textContent = `Alko avautuu: ${displayCountdown(timeUntilOpen)}`;
         }
+
+        if (countdownVisible) {
+            updateInterval = 1000; // 1-second if countdown is visible
+        } else {
+            updateInterval = 60000; // 1-minute if countdown is not visible
+        }
+
+        clearInterval(updateIntervalID);
+        updateIntervalID = setInterval(checkAlkoStatus, updateInterval);
     }
 
-    function handleAlkoClosedStatus(currentTime) {
-        const statusElement = document.getElementById('status');
-        const countdownElement = document.getElementById('countdown');
-
-        statusElement.textContent = "Alko on kiinni!";
-        statusElement.className = 'status closed';
-
-        const nextOpeningTime = getNextOpeningTime(currentTime);
-        const timeUntilOpen = calculateTimeUntil(currentTime, nextOpeningTime);
-
-        countdownElement.textContent = `Alko avautuu: ${displayCountdown(timeUntilOpen)}`;
-        setTimeout(updateStatus, 1000);
-    }
-
-    function updateStatus() {
-        const currentTime = getHelsinkiTime();
-        const hours = getTodayHours(currentTime);
-        handleAlkoOpenStatus(currentTime, hours);
-    }
-
-    updateStatus();
+    updateIntervalID = setInterval(checkAlkoStatus, updateInterval);
+    checkAlkoStatus();
 </script>
 </body>
 </html>
